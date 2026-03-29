@@ -1,210 +1,575 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>FingerPaint Pro</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@700;800&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#08080f;--surface:rgba(255,255,255,0.04);--surface2:rgba(255,255,255,0.07);
-  --border:rgba(255,255,255,0.09);--accent:#7c6bff;--accent2:#ff6b9d;--green:#4ade80;
-  --yellow:#facc15;--blue:#38bdf8;--text:#e8e8f0;--muted:#5a5a70;--glass:rgba(12,12,20,0.82);
-  --bar:60px;--r:13px;
+  --bg:#050508;
+  --bg2:#07070d;
+  --surface:rgba(255,255,255,0.035);
+  --surface2:rgba(255,255,255,0.065);
+  --surface3:rgba(255,255,255,0.1);
+  --border:rgba(255,255,255,0.08);
+  --border2:rgba(255,255,255,0.14);
+  --accent:#6c5ce7;
+  --accent2:#a855f7;
+  --accent3:#ec4899;
+  --neon:#8b5cf6;
+  --neon2:#06b6d4;
+  --green:#10b981;
+  --yellow:#f59e0b;
+  --blue:#38bdf8;
+  --text:#f1f0f8;
+  --text2:#c4c3d4;
+  --muted:#5a596e;
+  --glass:rgba(8,8,18,0.88);
+  --glass2:rgba(12,10,28,0.75);
+  --bar:70px;
+  --r:14px;
+  --r2:20px;
 }
-html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-family:'DM Mono',monospace;overflow:hidden}
 
+html,body{
+  width:100%;height:100%;
+  background:var(--bg);
+  color:var(--text);
+  font-family:'Space Grotesk',sans-serif;
+  overflow:hidden;
+}
+
+/* ── RADIAL AMBIENT ─────────────────────────────────────────── */
+body::before{
+  content:'';
+  position:fixed;inset:0;
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(108,92,231,0.12) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 40% at 85% 60%, rgba(168,85,247,0.07) 0%, transparent 50%),
+    radial-gradient(ellipse 40% 30% at 10% 80%, rgba(6,182,212,0.06) 0%, transparent 50%);
+  pointer-events:none;z-index:0;
+}
+
+/* ── TOPBAR ─────────────────────────────────────────────────── */
 #topbar{
   position:fixed;top:0;left:0;right:0;z-index:100;height:var(--bar);
-  display:flex;align-items:center;gap:10px;padding:0 16px;
-  background:var(--glass);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:8px;padding:0 20px;
+  background:rgba(5,5,10,0.82);
+  backdrop-filter:blur(24px) saturate(180%);
+  -webkit-backdrop-filter:blur(24px) saturate(180%);
+  border-bottom:1px solid var(--border);
+  box-shadow:0 1px 0 rgba(108,92,231,0.1), 0 4px 24px rgba(0,0,0,0.4);
 }
+
 #logo{
-  font-family:'Syne',sans-serif;font-size:1.05rem;font-weight:800;letter-spacing:-.02em;
+  display:flex;flex-direction:column;gap:1px;
+  text-decoration:none;
+}
+#logoRow{
+  display:flex;align-items:center;gap:9px;
+  font-family:'Outfit',sans-serif;font-size:1.08rem;font-weight:800;
+  letter-spacing:-.03em;white-space:nowrap;
+}
+#logoByline{
+  font-size:.68rem;color:#ffffff;letter-spacing:.03em;
+  font-weight:600;padding-left:2px;white-space:nowrap;
+}
+#logoMark{
+  width:30px;height:30px;border-radius:9px;
   background:linear-gradient(135deg,var(--accent),var(--accent2));
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;white-space:nowrap;margin-right:4px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:.8rem;box-shadow:0 0 14px rgba(108,92,231,0.5);
+  flex-shrink:0;
 }
-.sep{width:1px;height:26px;background:var(--border);flex-shrink:0}
-.tg{display:flex;flex-direction:column;gap:2px}
-.tl{font-size:.58rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+#logoText{
+  background:linear-gradient(135deg,#c4b5fd,#e879f9,#f9a8d4);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;
+}
+
+.vsep{width:1px;height:28px;background:var(--border);flex-shrink:0;margin:0 6px}
+
+/* Controls label + input wrapper */
+.ctrl{display:flex;flex-direction:column;gap:3px}
+.ctrl-label{font-size:.58rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);font-weight:500}
+
+/* Color picker */
 #colorPicker{
-  -webkit-appearance:none;appearance:none;width:32px;height:32px;
-  border:2px solid var(--border);border-radius:50%;cursor:pointer;padding:0;background:none;
+  -webkit-appearance:none;appearance:none;
+  width:30px;height:30px;border:2px solid var(--border2);
+  border-radius:50%;cursor:pointer;padding:0;background:none;
+  transition:border-color .2s,transform .15s;
 }
+#colorPicker:hover{border-color:var(--neon);transform:scale(1.08)}
 #colorPicker::-webkit-color-swatch-wrapper{padding:0;border-radius:50%;overflow:hidden}
 #colorPicker::-webkit-color-swatch{border:none;border-radius:50%}
+
+/* Brush slider */
 #brushSize{
-  -webkit-appearance:none;appearance:none;width:84px;height:4px;border-radius:2px;
-  background:linear-gradient(90deg,var(--accent),var(--accent2));cursor:pointer;outline:none;
+  -webkit-appearance:none;appearance:none;
+  width:80px;height:3px;border-radius:2px;
+  background:linear-gradient(90deg,var(--accent),var(--accent2));
+  cursor:pointer;outline:none;
 }
 #brushSize::-webkit-slider-thumb{
-  -webkit-appearance:none;appearance:none;width:13px;height:13px;border-radius:50%;
-  background:#fff;box-shadow:0 0 6px rgba(124,107,255,.7);cursor:pointer;
+  -webkit-appearance:none;appearance:none;
+  width:14px;height:14px;border-radius:50%;
+  background:#fff;cursor:pointer;
+  box-shadow:0 0 0 2px var(--accent), 0 0 10px rgba(108,92,231,.7);
+  transition:transform .15s;
 }
+#brushSize::-webkit-slider-thumb:hover{transform:scale(1.2)}
 
 /* Snap toggle */
-#snapToggle{
-  display:flex;align-items:center;gap:6px;font-size:.7rem;color:var(--muted);cursor:pointer;user-select:none;
-}
+#snapToggle{display:flex;align-items:center;gap:7px;cursor:pointer;user-select:none}
 #snapSwitch{
-  width:32px;height:18px;border-radius:9px;background:var(--surface2);border:1px solid var(--border);
-  position:relative;transition:background .2s;cursor:pointer;flex-shrink:0;
+  width:34px;height:19px;border-radius:10px;
+  background:var(--surface2);border:1px solid var(--border2);
+  position:relative;transition:background .25s,border-color .25s,box-shadow .25s;
+  cursor:pointer;flex-shrink:0;
 }
-#snapSwitch.on{background:var(--accent);border-color:var(--accent)}
+#snapSwitch.on{background:var(--accent);border-color:var(--accent);box-shadow:0 0 10px rgba(108,92,231,.45)}
 #snapKnob{
-  position:absolute;top:2px;left:2px;width:12px;height:12px;border-radius:50%;
-  background:#fff;transition:left .2s;
+  position:absolute;top:2.5px;left:2.5px;width:12px;height:12px;border-radius:50%;
+  background:#fff;transition:left .22s cubic-bezier(.4,0,.2,1);
 }
-#snapSwitch.on #snapKnob{left:16px}
+#snapSwitch.on #snapKnob{left:18px}
+#snapLabel{font-size:.68rem;color:var(--text2)}
 
 #spacer{flex:1}
-.btn{
-  display:flex;align-items:center;gap:5px;padding:6px 12px;border-radius:8px;
-  border:1px solid var(--border);background:var(--surface);color:var(--text);
-  font-family:'DM Mono',monospace;font-size:.72rem;cursor:pointer;
-  transition:background .15s,filter .15s,transform .1s;white-space:nowrap;
-}
-.btn:hover{background:var(--surface2)}
-.btn:active{transform:scale(.96)}
-.btn.ac{background:linear-gradient(135deg,var(--accent),#5040e0);border-color:transparent}
-.btn.ac:hover{filter:brightness(1.12)}
 
+/* Buttons */
+.btn{
+  display:flex;align-items:center;gap:5px;
+  padding:7px 13px;border-radius:10px;
+  border:1px solid var(--border);
+  background:var(--surface);
+  color:var(--text2);
+  font-family:'Space Grotesk',sans-serif;
+  font-size:.72rem;font-weight:500;
+  cursor:pointer;white-space:nowrap;
+  transition:background .18s,border-color .18s,color .18s,transform .12s,box-shadow .18s;
+}
+.btn:hover{
+  background:var(--surface2);
+  border-color:var(--border2);
+  color:var(--text);
+  transform:translateY(-1px);
+  box-shadow:0 4px 16px rgba(0,0,0,0.3);
+}
+.btn:active{transform:scale(.95) translateY(0)}
+.btn svg{opacity:.7;transition:opacity .18s}
+.btn:hover svg{opacity:1}
+.btn.ac{
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  border-color:transparent;color:#fff;
+  box-shadow:0 0 18px rgba(108,92,231,0.4);
+}
+.btn.ac:hover{
+  filter:brightness(1.12);
+  box-shadow:0 0 28px rgba(108,92,231,0.6);
+  transform:translateY(-1px);
+}
+.btn.ac:active{transform:scale(.96) translateY(0)}
+
+/* ── STAGE ──────────────────────────────────────────────────── */
 #stage{position:fixed;top:var(--bar);left:0;right:0;bottom:0}
+
 #video{
   position:absolute;inset:0;width:100%;height:100%;
-  object-fit:cover;transform:scaleX(-1);opacity:.28;pointer-events:none;
+  object-fit:cover;transform:scaleX(-1);
+  opacity:.22;pointer-events:none;
 }
 #lCanvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;transform:scaleX(-1)}
 #dCanvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
 #previewCanvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
 
-/* Snap flash overlay */
+/* Snap flash */
 #snapFlash{
   position:absolute;inset:0;pointer-events:none;z-index:55;
-  border:2px solid transparent;border-radius:0;
-  opacity:0;transition:opacity .4s;
+  border:2px solid transparent;opacity:0;transition:opacity .4s;
 }
-#snapFlash.show{opacity:1;border-color:rgba(124,107,255,0.5);animation:snapPulse .5s ease-out forwards}
-@keyframes snapPulse{0%{opacity:1;box-shadow:inset 0 0 40px rgba(124,107,255,0.3)}100%{opacity:0;box-shadow:none}}
+#snapFlash.show{
+  opacity:1;
+  border-color:rgba(168,85,247,0.5);
+  animation:snapPulse .55s ease-out forwards;
+}
+@keyframes snapPulse{
+  0%{opacity:1;box-shadow:inset 0 0 60px rgba(108,92,231,0.25)}
+  100%{opacity:0;box-shadow:none}
+}
 
+/* ── STATUS CARD ────────────────────────────────────────────── */
 #card{
-  position:absolute;bottom:20px;left:20px;z-index:50;
-  padding:13px 16px;background:var(--glass);backdrop-filter:blur(16px);
-  border:1px solid var(--border);border-radius:var(--r);
-  font-size:.67rem;color:var(--muted);line-height:1.9;min-width:186px;
+  position:absolute;bottom:24px;left:24px;z-index:50;
+  padding:14px 18px;
+  background:rgba(8,7,20,0.82);
+  backdrop-filter:blur(20px) saturate(180%);
+  -webkit-backdrop-filter:blur(20px);
+  border:1px solid var(--border);
+  border-radius:var(--r2);
+  font-size:.67rem;color:var(--muted);line-height:2;
+  min-width:196px;
+  box-shadow:0 8px 32px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.06);
+  transition:border-color .3s;
 }
-#dotRow{display:flex;align-items:center;gap:8px;margin-bottom:3px}
-#dot{width:8px;height:8px;border-radius:50%;background:#333;flex-shrink:0;transition:background .25s,box-shadow .25s}
-#dot.on  {background:var(--green);box-shadow:0 0 8px var(--green)}
-#dot.palm{background:var(--yellow);box-shadow:0 0 8px var(--yellow)}
-#dot.line{background:var(--blue);box-shadow:0 0 8px var(--blue)}
-#statusTxt{color:var(--text);font-size:.72rem}
-#guessTxt{color:var(--accent);font-size:.72rem;min-height:1.1em;margin-top:2px;font-weight:500}
-#snapTxt{color:var(--green);font-size:.67rem;min-height:1em;opacity:0;transition:opacity .3s}
+#card:hover{border-color:rgba(108,92,231,0.3)}
+
+#dotRow{display:flex;align-items:center;gap:9px;margin-bottom:5px}
+#dot{
+  width:8px;height:8px;border-radius:50%;
+  background:#1e1e2e;flex-shrink:0;
+  transition:background .25s,box-shadow .25s,transform .2s;
+}
+#dot.on  {background:var(--green);box-shadow:0 0 10px var(--green);transform:scale(1.15)}
+#dot.palm{background:var(--yellow);box-shadow:0 0 10px var(--yellow);transform:scale(1.15)}
+#dot.line{background:var(--blue);box-shadow:0 0 10px var(--blue);transform:scale(1.15)}
+#statusTxt{color:var(--text);font-size:.73rem;font-weight:600}
+
+.card-hint{display:flex;align-items:center;gap:7px;color:var(--muted);font-size:.63rem}
+.card-hint span{font-size:.85rem}
+
+#guessTxt{
+  color:var(--neon);font-size:.72rem;min-height:1.1em;
+  margin-top:4px;font-weight:600;
+  text-shadow:0 0 12px rgba(139,92,246,0.5);
+}
+#snapTxt{
+  color:var(--green);font-size:.65rem;min-height:1em;
+  opacity:0;transition:opacity .3s;
+}
 #snapTxt.show{opacity:1}
 
+/* ── PALM OVERLAY ────────────────────────────────────────────── */
 #palmOverlay{
   position:absolute;inset:0;display:flex;flex-direction:column;
   align-items:center;justify-content:center;pointer-events:none;z-index:60;
-  opacity:0;transition:opacity .2s;
+  opacity:0;transition:opacity .25s;
 }
 #palmOverlay.show{opacity:1}
 #palmRing{
-  width:110px;height:110px;border-radius:50%;
-  border:3px solid rgba(255,255,255,.06);
+  width:120px;height:120px;border-radius:50%;
+  border:2px solid rgba(255,255,255,0.05);
   position:relative;display:flex;align-items:center;justify-content:center;
+  background:rgba(245,158,11,0.05);
 }
-#palmSvg{position:absolute;top:-4px;left:-4px;width:calc(100% + 8px);height:calc(100% + 8px);transform:rotate(-90deg)}
-#palmArc{fill:none;stroke:var(--yellow);stroke-width:4;stroke-linecap:round;stroke-dasharray:340;stroke-dashoffset:340}
-#palmEmoji{font-size:2.2rem}
-#palmLbl{font-family:'Syne',sans-serif;font-size:.95rem;font-weight:700;color:var(--yellow);margin-top:11px}
+#palmSvg{position:absolute;top:-5px;left:-5px;width:calc(100%+10px);height:calc(100%+10px);transform:rotate(-90deg)}
+#palmArc{fill:none;stroke:var(--yellow);stroke-width:3.5;stroke-linecap:round;stroke-dasharray:340;stroke-dashoffset:340;filter:drop-shadow(0 0 6px var(--yellow))}
+#palmEmoji{font-size:2.4rem}
+#palmLbl{
+  font-family:'Outfit',sans-serif;font-size:.95rem;font-weight:700;
+  color:var(--yellow);margin-top:13px;
+  text-shadow:0 0 20px rgba(245,158,11,0.5);
+}
 
+/* ── TOAST ───────────────────────────────────────────────────── */
 #toast{
-  position:absolute;top:14px;left:50%;
-  transform:translateX(-50%) translateY(-60px);
-  background:var(--glass);backdrop-filter:blur(14px);
-  border:1px solid var(--border);border-radius:10px;
-  padding:8px 20px;font-size:.74rem;color:var(--text);
-  transition:transform .32s cubic-bezier(.16,1,.3,1),opacity .32s;
+  position:absolute;top:16px;left:50%;
+  transform:translateX(-50%) translateY(-70px);
+  background:rgba(10,8,25,0.92);
+  backdrop-filter:blur(20px);
+  border:1px solid var(--border2);
+  border-radius:12px;
+  padding:9px 22px;
+  font-size:.74rem;font-weight:500;
+  color:var(--text);
+  transition:transform .36s cubic-bezier(.16,1,.3,1),opacity .36s;
   opacity:0;z-index:200;white-space:nowrap;
+  box-shadow:0 4px 24px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.08);
 }
 #toast.show{transform:translateX(-50%) translateY(0);opacity:1}
 
+/* ── SPLASH SCREEN ───────────────────────────────────────────── */
 #splash{
-  position:absolute;inset:0;display:flex;flex-direction:column;
-  align-items:center;justify-content:center;gap:13px;
-  background:var(--bg);z-index:300;transition:opacity .5s;
+  position:absolute;inset:0;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:0;
+  background:radial-gradient(ellipse 100% 80% at 50% 0%, rgba(108,92,231,0.15) 0%, var(--bg) 60%);
+  z-index:300;
+  transition:opacity .6s ease;
+  overflow:hidden;
 }
-#splash h1{
-  font-family:'Syne',sans-serif;font-size:2.1rem;font-weight:800;
-  background:linear-gradient(135deg,var(--accent),var(--accent2));
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
-}
-#splash p{color:var(--muted);font-size:.77rem;max-width:320px;text-align:center;line-height:1.7}
-#splashGrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;max-width:320px;margin-top:4px}
-.hint{background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:8px 11px;font-size:.66rem;color:var(--muted);line-height:1.5}
-.hint b{color:var(--text);display:block;margin-bottom:2px}
-.hint em{color:var(--accent);font-style:normal}
-#startBtn{
-  margin-top:6px;padding:11px 30px;
-  background:linear-gradient(135deg,var(--accent),#5040e0);
-  border:none;border-radius:10px;color:#fff;
-  font-family:'DM Mono',monospace;font-size:.82rem;cursor:pointer;
-  transition:filter .2s,transform .15s;
-}
-#startBtn:hover{filter:brightness(1.14);transform:translateY(-1px)}
 
-@media(max-width:600px){
+/* Animated bg particles */
+#splash::before{
+  content:'';
+  position:absolute;inset:0;
+  background-image:
+    radial-gradient(1px 1px at 20% 30%, rgba(168,85,247,0.4) 0%, transparent 100%),
+    radial-gradient(1px 1px at 80% 20%, rgba(108,92,231,0.4) 0%, transparent 100%),
+    radial-gradient(1px 1px at 60% 70%, rgba(6,182,212,0.3) 0%, transparent 100%),
+    radial-gradient(1px 1px at 30% 80%, rgba(236,72,153,0.3) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 70% 50%, rgba(168,85,247,0.35) 0%, transparent 100%),
+    radial-gradient(1px 1px at 10% 60%, rgba(108,92,231,0.3) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 90% 80%, rgba(6,182,212,0.35) 0%, transparent 100%),
+    radial-gradient(1px 1px at 45% 15%, rgba(236,72,153,0.3) 0%, transparent 100%);
+  background-size:100% 100%;
+  animation:particleDrift 20s ease-in-out infinite alternate;
+  pointer-events:none;
+}
+@keyframes particleDrift{
+  0%{transform:translate(0,0) scale(1)}
+  100%{transform:translate(-10px,-15px) scale(1.02)}
+}
+
+/* Glow orb behind title */
+#splashGlow{
+  position:absolute;
+  width:500px;height:300px;
+  border-radius:50%;
+  background:radial-gradient(ellipse, rgba(108,92,231,0.18) 0%, transparent 70%);
+  top:50%;left:50%;
+  transform:translate(-50%,-60%);
+  pointer-events:none;
+  animation:glowPulse 4s ease-in-out infinite;
+}
+@keyframes glowPulse{
+  0%,100%{opacity:.7;transform:translate(-50%,-60%) scale(1)}
+  50%{opacity:1;transform:translate(-50%,-62%) scale(1.05)}
+}
+
+#splashInner{
+  position:relative;z-index:1;
+  display:flex;flex-direction:column;align-items:center;
+  gap:0;text-align:center;
+  animation:fadeUp .8s cubic-bezier(.16,1,.3,1) both;
+}
+@keyframes fadeUp{
+  from{opacity:0;transform:translateY(28px)}
+  to{opacity:1;transform:translateY(0)}
+}
+
+.splash-badge{
+  display:inline-flex;align-items:center;gap:7px;
+  padding:5px 14px;border-radius:100px;
+  background:rgba(108,92,231,0.12);
+  border:1px solid rgba(108,92,231,0.3);
+  font-size:.68rem;font-weight:600;letter-spacing:.07em;
+  color:#a78bfa;text-transform:uppercase;
+  margin-bottom:28px;
+  animation:fadeUp .8s .1s cubic-bezier(.16,1,.3,1) both;
+}
+.splash-badge-dot{
+  width:6px;height:6px;border-radius:50%;
+  background:var(--neon);
+  box-shadow:0 0 6px var(--neon);
+  animation:blink 1.8s ease-in-out infinite;
+}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+
+#splashTitle{
+  font-family:'Outfit',sans-serif;
+  font-size:clamp(2.6rem, 7vw, 5rem);
+  font-weight:900;line-height:1.02;letter-spacing:-.04em;
+  margin-bottom:10px;
+  animation:fadeUp .8s .18s cubic-bezier(.16,1,.3,1) both;
+}
+.title-line1{
+  display:block;
+  background:linear-gradient(135deg, #e0d7ff 0%, #c4b5fd 30%, #e879f9 60%, #f9a8d4 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;
+  filter:drop-shadow(0 0 40px rgba(168,85,247,0.3));
+}
+.title-line2{
+  display:block;
+  color:#ffffff;
+  opacity:.92;
+}
+
+#splashSub{
+  font-size:.95rem;color:var(--muted);font-weight:400;
+  margin-bottom:6px;letter-spacing:.01em;
+  animation:fadeUp .8s .26s cubic-bezier(.16,1,.3,1) both;
+}
+#splashTagline{
+  font-size:.8rem;
+  background:linear-gradient(90deg,var(--neon2),var(--neon));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;
+  font-weight:600;letter-spacing:.06em;text-transform:uppercase;
+  margin-bottom:44px;
+  animation:fadeUp .8s .32s cubic-bezier(.16,1,.3,1) both;
+}
+
+/* Feature cards grid */
+#splashGrid{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:10px;
+  max-width:560px;width:100%;margin-bottom:36px;
+  animation:fadeUp .8s .4s cubic-bezier(.16,1,.3,1) both;
+}
+.hint{
+  background:rgba(255,255,255,0.025);
+  border:1px solid rgba(255,255,255,0.07);
+  border-radius:14px;
+  padding:14px 14px;
+  font-size:.67rem;color:var(--muted);
+  line-height:1.55;
+  transition:background .22s,border-color .22s,transform .22s,box-shadow .22s;
+  cursor:default;
+  text-align:left;
+  position:relative;
+  overflow:hidden;
+}
+.hint::before{
+  content:'';
+  position:absolute;inset:0;
+  background:linear-gradient(135deg,rgba(108,92,231,0.06),transparent);
+  opacity:0;transition:opacity .25s;
+}
+.hint:hover{
+  background:rgba(108,92,231,0.08);
+  border-color:rgba(108,92,231,0.25);
+  transform:translateY(-3px) scale(1.01);
+  box-shadow:0 8px 28px rgba(0,0,0,0.4), 0 0 0 1px rgba(108,92,231,0.2);
+}
+.hint:hover::before{opacity:1}
+.hint-icon{font-size:1.3rem;display:block;margin-bottom:7px}
+.hint b{color:var(--text);display:block;margin-bottom:3px;font-weight:600;font-size:.7rem}
+.hint em{color:var(--neon);font-style:normal}
+
+/* CTA button */
+#startBtn{
+  position:relative;
+  padding:14px 40px;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  border:none;border-radius:14px;
+  color:#fff;
+  font-family:'Outfit',sans-serif;font-size:.95rem;font-weight:700;
+  cursor:pointer;letter-spacing:-.01em;
+  transition:transform .2s,box-shadow .2s,filter .2s;
+  box-shadow:0 0 0 1px rgba(255,255,255,0.1) inset, 0 4px 24px rgba(108,92,231,0.5);
+  animation:fadeUp .8s .52s cubic-bezier(.16,1,.3,1) both;
+  overflow:hidden;
+}
+#startBtn::before{
+  content:'';
+  position:absolute;inset:0;
+  background:linear-gradient(135deg,rgba(255,255,255,.15),transparent 60%);
+  border-radius:14px;
+}
+#startBtn::after{
+  content:'';
+  position:absolute;
+  top:-50%;left:-60%;width:40%;height:200%;
+  background:rgba(255,255,255,0.12);
+  transform:skewX(-20deg);
+  transition:left .5s ease;
+}
+#startBtn:hover::after{left:120%}
+#startBtn:hover{
+  transform:translateY(-2px) scale(1.02);
+  box-shadow:0 0 0 1px rgba(255,255,255,0.15) inset, 0 8px 40px rgba(108,92,231,0.7);
+  filter:brightness(1.1);
+}
+#startBtn:active{transform:scale(.97);filter:brightness(.95)}
+
+/* Camera loading spinner */
+#camLoader{
+  display:none;
+  width:22px;height:22px;border-radius:50%;
+  border:2.5px solid rgba(255,255,255,0.25);
+  border-top-color:#fff;
+  animation:spin .7s linear infinite;
+  margin-right:8px;
+  vertical-align:middle;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+#startBtn.loading #camLoader{display:inline-block}
+#startBtn.loading .btn-text{opacity:.7}
+
+/* ── CUSTOM CURSOR GLOW ──────────────────────────────────────── */
+#cursorGlow{
+  position:fixed;width:300px;height:300px;border-radius:50%;
+  pointer-events:none;z-index:1000;
+  background:radial-gradient(circle, rgba(108,92,231,0.06) 0%, transparent 70%);
+  transform:translate(-50%,-50%);
+  transition:opacity .3s;
+  mix-blend-mode:screen;
+}
+
+/* ── RESPONSIVE ──────────────────────────────────────────────── */
+@media(max-width:700px){
   #brushSize{width:60px}
-  .btn{padding:5px 9px;font-size:.64rem}
-  #logo{font-size:.85rem}
+  .btn{padding:6px 9px;font-size:.64rem}
+  #logo .logoText{font-size:.85rem}
+  #splashGrid{grid-template-columns:repeat(2,1fr);max-width:360px}
+  #splashTitle{font-size:clamp(2rem,10vw,3.5rem)}
+  .vsep{margin:0 2px}
+}
+@media(max-width:480px){
+  #snapToggle{display:none}
+  .vsep:last-of-type{display:none}
+  #splashGrid{grid-template-columns:1fr 1fr;gap:8px;max-width:300px}
 }
 </style>
 </head>
 <body>
 
+<div id="cursorGlow"></div>
+
+<!-- ── TOPBAR ── -->
 <div id="topbar">
-  <span id="logo">✦ FingerPaint Pro</span>
-  <div class="sep"></div>
-  <div class="tg">
-    <div class="tl">Color</div>
+  <div id="logo">
+    <div id="logoRow">
+      <div id="logoMark">✦</div>
+      <span id="logoText">FingerPaint Pro</span>
+    </div>
+    <div id="logoByline">An exclusive website by Samiran Pande.</div>
+  </div>
+
+  <div class="vsep"></div>
+
+  <div class="ctrl">
+    <div class="ctrl-label">Color</div>
     <input type="color" id="colorPicker" value="#7c6bff"/>
   </div>
-  <div class="sep"></div>
-  <div class="tg">
-    <div class="tl">Size</div>
+
+  <div class="vsep"></div>
+
+  <div class="ctrl">
+    <div class="ctrl-label">Size</div>
     <input type="range" id="brushSize" min="2" max="40" value="8"/>
   </div>
-  <div class="sep"></div>
-  <div class="tg">
-    <div class="tl">Auto-Snap</div>
+
+  <div class="vsep"></div>
+
+  <div class="ctrl">
+    <div class="ctrl-label">Auto-Snap</div>
     <div id="snapToggle">
       <div id="snapSwitch" class="on"><div id="snapKnob"></div></div>
       <span id="snapLabel">On</span>
     </div>
   </div>
-  <div class="sep"></div>
+
+  <div class="vsep"></div>
   <span id="spacer"></span>
+
   <button class="btn" id="undoBtn">
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
       <path d="M3 7v6h6"/><path d="M21 17a9 9 0 00-9-9 9 9 0 00-6 2.3L3 13"/>
     </svg>Undo
   </button>
+
   <button class="btn" id="clearBtn">
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
       <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/>
       <path d="M10 11v6"/><path d="M14 11v6"/>
     </svg>Clear
   </button>
+
   <button class="btn ac" id="saveBtn">
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
       <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
       <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
     </svg>Save PNG
   </button>
 </div>
 
+<!-- ── STAGE ── -->
 <div id="stage">
   <video id="video" autoplay playsinline muted></video>
   <canvas id="lCanvas"></canvas>
@@ -212,40 +577,90 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
   <canvas id="previewCanvas"></canvas>
   <div id="snapFlash"></div>
 
+  <!-- Palm overlay -->
   <div id="palmOverlay">
     <div id="palmRing">
-      <svg id="palmSvg" viewBox="0 0 118 118">
-        <circle id="palmArc" cx="59" cy="59" r="54"/>
+      <svg id="palmSvg" viewBox="0 0 128 128">
+        <circle id="palmArc" cx="64" cy="64" r="54"/>
       </svg>
       <span id="palmEmoji">🖐️</span>
     </div>
     <div id="palmLbl">Hold to clear…</div>
   </div>
 
+  <!-- Status card -->
   <div id="card">
-    <div id="dotRow"><div id="dot"></div><span id="statusTxt">Show your hand</span></div>
-    <div>☝ Index finger → draw</div>
-    <div>✌️ Two fingers → straight line</div>
-    <div>🖐️ Palm 1 sec → clear</div>
-    <div>⚡ Quick palm → undo</div>
+    <div id="dotRow">
+      <div id="dot"></div>
+      <span id="statusTxt">Show your hand</span>
+    </div>
+    <div class="card-hint"><span>☝</span> Index finger → draw</div>
+    <div class="card-hint"><span>✌️</span> Two fingers → straight line</div>
+    <div class="card-hint"><span>🖐️</span> Palm 1 sec → clear</div>
+    <div class="card-hint"><span>⚡</span> Quick palm → undo</div>
     <div id="guessTxt"></div>
     <div id="snapTxt"></div>
   </div>
 
   <div id="toast"></div>
 
+  <!-- ── SPLASH SCREEN ── -->
   <div id="splash">
-    <h1>FingerPaint Pro</h1>
-    <p>AI gesture drawing with <em>auto-snap</em> — shapes redrawn perfectly.</p>
-    <div id="splashGrid">
-      <div class="hint"><b>☝ Index finger</b>Point up to draw freely</div>
-      <div class="hint"><b>✌️ Two fingers</b>Straight line mode</div>
-      <div class="hint"><b>🖐️ Palm hold 1s</b>Clear canvas</div>
-      <div class="hint"><b>⚡ Quick palm</b>Undo last stroke</div>
-      <div class="hint"><b>✨ Auto-Snap</b>Draw a <em>circle, rect, triangle</em> or <em>line</em> — snapped perfectly!</div>
-      <div class="hint"><b>💾 Save PNG</b>Top-right button</div>
+    <div id="splashGlow"></div>
+    <div id="splashInner">
+
+      <div class="splash-badge">
+        <div class="splash-badge-dot"></div>
+        AI Gesture Drawing
+      </div>
+
+      <h1 id="splashTitle">
+        <span class="title-line1">FingerPaint</span>
+        <span class="title-line2">Pro</span>
+      </h1>
+
+      <p id="splashSub">Draw in air using AI gestures — shapes redrawn perfectly.</p>
+      <p id="splashTagline">No touch. Just motion.</p>
+
+      <div id="splashGrid">
+        <div class="hint">
+          <span class="hint-icon">☝</span>
+          <b>Index Finger</b>
+          Point up to draw freely
+        </div>
+        <div class="hint">
+          <span class="hint-icon">✌️</span>
+          <b>Two Fingers</b>
+          Straight line mode
+        </div>
+        <div class="hint">
+          <span class="hint-icon">🖐️</span>
+          <b>Palm Hold 1s</b>
+          Clear the canvas
+        </div>
+        <div class="hint">
+          <span class="hint-icon">⚡</span>
+          <b>Quick Palm</b>
+          Undo last stroke
+        </div>
+        <div class="hint">
+          <span class="hint-icon">✨</span>
+          <b>Auto-Snap</b>
+          Draw a <em>circle, rect</em> or <em>triangle</em> — snapped perfectly
+        </div>
+        <div class="hint">
+          <span class="hint-icon">💾</span>
+          <b>Save PNG</b>
+          Top-right button
+        </div>
+      </div>
+
+      <button id="startBtn">
+        <span id="camLoader"></span>
+        <span class="btn-text">Start Drawing</span>
+      </button>
+
     </div>
-    <button id="startBtn">Enable Camera</button>
   </div>
 </div>
 
@@ -256,6 +671,13 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
 <script>
 (function () {
 "use strict";
+
+// ── CURSOR GLOW ────────────────────────────────────────────────────────────
+const cursorGlow = document.getElementById("cursorGlow");
+document.addEventListener("mousemove", e => {
+  cursorGlow.style.left = e.clientX + "px";
+  cursorGlow.style.top  = e.clientY + "px";
+});
 
 // ── ELEMENTS ──────────────────────────────────────────────────────────────
 const video       = document.getElementById("video");
@@ -416,7 +838,6 @@ function countCorners(pts, thresh) {
   return c;
 }
 
-// Detect what was drawn — returns an object {type, label, bbox}
 function detectShape(pts) {
   if (pts.length < 6) return null;
   const xs = pts.map(p=>p[0]), ys = pts.map(p=>p[1]);
@@ -435,7 +856,6 @@ function detectShape(pts) {
   const straight = Math.hypot(pts[pts.length-1][0]-pts[0][0],
                                pts[pts.length-1][1]-pts[0][1]) / Math.max(total, 1);
 
-  // ── SHAPES ────────────────────────────────────────────────────────────
   if (!isClosed && straight > 0.82)
     return {type:"line", label:"Line ➖", bbox};
 
@@ -455,9 +875,6 @@ function detectShape(pts) {
   return null;
 }
 
-// ── SNAP DRAWERS ──────────────────────────────────────────────────────────
-// Each draws a perfect version of the detected shape onto dCtx
-
 function snapLine(pts, color, size) {
   const p0 = pts[0], pN = pts[pts.length-1];
   drawSeg(p0[0],p0[1], pN[0],pN[1], color, size);
@@ -471,7 +888,6 @@ function snapCircle(bbox, color, size) {
   dCtx.beginPath();
   dCtx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI*2);
   dCtx.stroke();
-  // bright core
   dCtx.shadowBlur=0; dCtx.strokeStyle="rgba(255,255,255,0.26)";
   dCtx.lineWidth=size*0.28; dCtx.globalAlpha=0.48;
   dCtx.beginPath(); dCtx.ellipse(cx,cy,rx,ry,0,0,Math.PI*2); dCtx.stroke();
@@ -501,7 +917,6 @@ function snapSquare(bbox, color, size) {
 
 function snapTriangle(bbox, color, size) {
   const {minX,maxX,minY,maxY,cx} = bbox;
-  // Isoceles: top-center, bottom-left, bottom-right
   const pts = [[cx, minY],[minX, maxY],[maxX, maxY]];
   dCtx.save();
   applyGlow(dCtx, color, size);
@@ -518,29 +933,22 @@ function snapTriangle(bbox, color, size) {
   dCtx.restore();
 }
 
-// ── MAIN SNAP FUNCTION ────────────────────────────────────────────────────
 function snapShape(detected, strokePts, color, size) {
   const {type, bbox} = detected;
-
-  // Erase the freehand drawing first (restore pre-stroke state)
   if (history.length) {
     const prev = history[history.length - 1];
     dCtx.putImageData(prev, 0, 0);
   }
-  // Now push a new history entry for the snap
   pushHistory();
-
   if      (type === "line")     snapLine(strokePts, color, size);
   else if (type === "circle")   snapCircle(bbox, color, size);
   else if (type === "rect")     snapRect(bbox, color, size);
   else if (type === "square")   snapSquare(bbox, color, size);
   else if (type === "triangle") snapTriangle(bbox, color, size);
-  else return false; // unknown — keep freehand
-
+  else return false;
   return true;
 }
 
-// ── ANALYZE + SNAP ────────────────────────────────────────────────────────
 function analyzeAndSnap(pts) {
   if (!pts || pts.length < 3) return;
   const detected = detectShape(pts);
@@ -791,7 +1199,7 @@ function savePNG() {
   const off = document.createElement("canvas");
   off.width = W; off.height = H;
   const c = off.getContext("2d");
-  c.fillStyle = "#08080f";
+  c.fillStyle = "#050508";
   c.fillRect(0, 0, W, H);
   c.drawImage(dCanvas, 0, 0);
   const a = document.createElement("a");
@@ -831,10 +1239,15 @@ saveBtn.addEventListener("click", () => { savePNG(); showToast("💾 Saved!"); }
 undoBtn.addEventListener("click", undo);
 
 startBtn.addEventListener("click", () => {
-  splash.style.opacity = "0";
-  splash.style.pointerEvents = "none";
-  setTimeout(() => splash.style.display = "none", 500);
-  startCamera();
+  startBtn.classList.add("loading");
+  startBtn.querySelector(".btn-text").textContent = "Starting…";
+
+  setTimeout(() => {
+    splash.style.opacity = "0";
+    splash.style.pointerEvents = "none";
+    setTimeout(() => splash.style.display = "none", 600);
+    startCamera();
+  }, 600);
 });
 
 })();
