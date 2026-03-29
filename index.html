@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>FingerPaint Pro</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@700;800&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#08080f;--surface:rgba(255,255,255,0.04);--surface2:rgba(255,255,255,0.07);
+  --border:rgba(255,255,255,0.09);--accent:#7c6bff;--accent2:#ff6b9d;--green:#4ade80;
+  --yellow:#facc15;--blue:#38bdf8;--text:#e8e8f0;--muted:#5a5a70;--glass:rgba(12,12,20,0.82);
+  --bar:60px;--r:13px;
+}
+html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-family:'DM Mono',monospace;overflow:hidden}
+
+#topbar{
+  position:fixed;top:0;left:0;right:0;z-index:100;height:var(--bar);
+  display:flex;align-items:center;gap:10px;padding:0 16px;
+  background:var(--glass);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);
+}
+#logo{
+  font-family:'Syne',sans-serif;font-size:1.05rem;font-weight:800;letter-spacing:-.02em;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;white-space:nowrap;margin-right:4px;
+}
+.sep{width:1px;height:26px;background:var(--border);flex-shrink:0}
+.tg{display:flex;flex-direction:column;gap:2px}
+.tl{font-size:.58rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+#colorPicker{
+  -webkit-appearance:none;appearance:none;width:32px;height:32px;
+  border:2px solid var(--border);border-radius:50%;cursor:pointer;padding:0;background:none;
+}
+#colorPicker::-webkit-color-swatch-wrapper{padding:0;border-radius:50%;overflow:hidden}
+#colorPicker::-webkit-color-swatch{border:none;border-radius:50%}
+#brushSize{
+  -webkit-appearance:none;appearance:none;width:84px;height:4px;border-radius:2px;
+  background:linear-gradient(90deg,var(--accent),var(--accent2));cursor:pointer;outline:none;
+}
+#brushSize::-webkit-slider-thumb{
+  -webkit-appearance:none;appearance:none;width:13px;height:13px;border-radius:50%;
+  background:#fff;box-shadow:0 0 6px rgba(124,107,255,.7);cursor:pointer;
+}
+
+/* Snap toggle */
+#snapToggle{
+  display:flex;align-items:center;gap:6px;font-size:.7rem;color:var(--muted);cursor:pointer;user-select:none;
+}
+#snapSwitch{
+  width:32px;height:18px;border-radius:9px;background:var(--surface2);border:1px solid var(--border);
+  position:relative;transition:background .2s;cursor:pointer;flex-shrink:0;
+}
+#snapSwitch.on{background:var(--accent);border-color:var(--accent)}
+#snapKnob{
+  position:absolute;top:2px;left:2px;width:12px;height:12px;border-radius:50%;
+  background:#fff;transition:left .2s;
+}
+#snapSwitch.on #snapKnob{left:16px}
+
+#spacer{flex:1}
+.btn{
+  display:flex;align-items:center;gap:5px;padding:6px 12px;border-radius:8px;
+  border:1px solid var(--border);background:var(--surface);color:var(--text);
+  font-family:'DM Mono',monospace;font-size:.72rem;cursor:pointer;
+  transition:background .15s,filter .15s,transform .1s;white-space:nowrap;
+}
+.btn:hover{background:var(--surface2)}
+.btn:active{transform:scale(.96)}
+.btn.ac{background:linear-gradient(135deg,var(--accent),#5040e0);border-color:transparent}
+.btn.ac:hover{filter:brightness(1.12)}
+
+#stage{position:fixed;top:var(--bar);left:0;right:0;bottom:0}
+#video{
+  position:absolute;inset:0;width:100%;height:100%;
+  object-fit:cover;transform:scaleX(-1);opacity:.28;pointer-events:none;
+}
+#lCanvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;transform:scaleX(-1)}
+#dCanvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+#previewCanvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+
+/* Snap flash overlay */
+#snapFlash{
+  position:absolute;inset:0;pointer-events:none;z-index:55;
+  border:2px solid transparent;border-radius:0;
+  opacity:0;transition:opacity .4s;
+}
+#snapFlash.show{opacity:1;border-color:rgba(124,107,255,0.5);animation:snapPulse .5s ease-out forwards}
+@keyframes snapPulse{0%{opacity:1;box-shadow:inset 0 0 40px rgba(124,107,255,0.3)}100%{opacity:0;box-shadow:none}}
+
+#card{
+  position:absolute;bottom:20px;left:20px;z-index:50;
+  padding:13px 16px;background:var(--glass);backdrop-filter:blur(16px);
+  border:1px solid var(--border);border-radius:var(--r);
+  font-size:.67rem;color:var(--muted);line-height:1.9;min-width:186px;
+}
+#dotRow{display:flex;align-items:center;gap:8px;margin-bottom:3px}
+#dot{width:8px;height:8px;border-radius:50%;background:#333;flex-shrink:0;transition:background .25s,box-shadow .25s}
+#dot.on  {background:var(--green);box-shadow:0 0 8px var(--green)}
+#dot.palm{background:var(--yellow);box-shadow:0 0 8px var(--yellow)}
+#dot.line{background:var(--blue);box-shadow:0 0 8px var(--blue)}
+#statusTxt{color:var(--text);font-size:.72rem}
+#guessTxt{color:var(--accent);font-size:.72rem;min-height:1.1em;margin-top:2px;font-weight:500}
+#snapTxt{color:var(--green);font-size:.67rem;min-height:1em;opacity:0;transition:opacity .3s}
+#snapTxt.show{opacity:1}
+
+#palmOverlay{
+  position:absolute;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;pointer-events:none;z-index:60;
+  opacity:0;transition:opacity .2s;
+}
+#palmOverlay.show{opacity:1}
+#palmRing{
+  width:110px;height:110px;border-radius:50%;
+  border:3px solid rgba(255,255,255,.06);
+  position:relative;display:flex;align-items:center;justify-content:center;
+}
+#palmSvg{position:absolute;top:-4px;left:-4px;width:calc(100% + 8px);height:calc(100% + 8px);transform:rotate(-90deg)}
+#palmArc{fill:none;stroke:var(--yellow);stroke-width:4;stroke-linecap:round;stroke-dasharray:340;stroke-dashoffset:340}
+#palmEmoji{font-size:2.2rem}
+#palmLbl{font-family:'Syne',sans-serif;font-size:.95rem;font-weight:700;color:var(--yellow);margin-top:11px}
+
+#toast{
+  position:absolute;top:14px;left:50%;
+  transform:translateX(-50%) translateY(-60px);
+  background:var(--glass);backdrop-filter:blur(14px);
+  border:1px solid var(--border);border-radius:10px;
+  padding:8px 20px;font-size:.74rem;color:var(--text);
+  transition:transform .32s cubic-bezier(.16,1,.3,1),opacity .32s;
+  opacity:0;z-index:200;white-space:nowrap;
+}
+#toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+
+#splash{
+  position:absolute;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:13px;
+  background:var(--bg);z-index:300;transition:opacity .5s;
+}
+#splash h1{
+  font-family:'Syne',sans-serif;font-size:2.1rem;font-weight:800;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+}
+#splash p{color:var(--muted);font-size:.77rem;max-width:320px;text-align:center;line-height:1.7}
+#splashGrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;max-width:320px;margin-top:4px}
+.hint{background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:8px 11px;font-size:.66rem;color:var(--muted);line-height:1.5}
+.hint b{color:var(--text);display:block;margin-bottom:2px}
+.hint em{color:var(--accent);font-style:normal}
+#startBtn{
+  margin-top:6px;padding:11px 30px;
+  background:linear-gradient(135deg,var(--accent),#5040e0);
+  border:none;border-radius:10px;color:#fff;
+  font-family:'DM Mono',monospace;font-size:.82rem;cursor:pointer;
+  transition:filter .2s,transform .15s;
+}
+#startBtn:hover{filter:brightness(1.14);transform:translateY(-1px)}
+
+@media(max-width:600px){
+  #brushSize{width:60px}
+  .btn{padding:5px 9px;font-size:.64rem}
+  #logo{font-size:.85rem}
+}
+</style>
+</head>
+<body>
+
+<div id="topbar">
+  <span id="logo">✦ FingerPaint Pro</span>
+  <div class="sep"></div>
+  <div class="tg">
+    <div class="tl">Color</div>
+    <input type="color" id="colorPicker" value="#7c6bff"/>
+  </div>
+  <div class="sep"></div>
+  <div class="tg">
+    <div class="tl">Size</div>
+    <input type="range" id="brushSize" min="2" max="40" value="8"/>
+  </div>
+  <div class="sep"></div>
+  <div class="tg">
+    <div class="tl">Auto-Snap</div>
+    <div id="snapToggle">
+      <div id="snapSwitch" class="on"><div id="snapKnob"></div></div>
+      <span id="snapLabel">On</span>
+    </div>
+  </div>
+  <div class="sep"></div>
+  <span id="spacer"></span>
+  <button class="btn" id="undoBtn">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+      <path d="M3 7v6h6"/><path d="M21 17a9 9 0 00-9-9 9 9 0 00-6 2.3L3 13"/>
+    </svg>Undo
+  </button>
+  <button class="btn" id="clearBtn">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+      <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/>
+      <path d="M10 11v6"/><path d="M14 11v6"/>
+    </svg>Clear
+  </button>
+  <button class="btn ac" id="saveBtn">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+      <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+      <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+    </svg>Save PNG
+  </button>
+</div>
+
+<div id="stage">
+  <video id="video" autoplay playsinline muted></video>
+  <canvas id="lCanvas"></canvas>
+  <canvas id="dCanvas"></canvas>
+  <canvas id="previewCanvas"></canvas>
+  <div id="snapFlash"></div>
+
+  <div id="palmOverlay">
+    <div id="palmRing">
+      <svg id="palmSvg" viewBox="0 0 118 118">
+        <circle id="palmArc" cx="59" cy="59" r="54"/>
+      </svg>
+      <span id="palmEmoji">🖐️</span>
+    </div>
+    <div id="palmLbl">Hold to clear…</div>
+  </div>
+
+  <div id="card">
+    <div id="dotRow"><div id="dot"></div><span id="statusTxt">Show your hand</span></div>
+    <div>☝ Index finger → draw</div>
+    <div>✌️ Two fingers → straight line</div>
+    <div>🖐️ Palm 1 sec → clear</div>
+    <div>⚡ Quick palm → undo</div>
+    <div id="guessTxt"></div>
+    <div id="snapTxt"></div>
+  </div>
+
+  <div id="toast"></div>
+
+  <div id="splash">
+    <h1>FingerPaint Pro</h1>
+    <p>AI gesture drawing with <em>auto-snap</em> — shapes redrawn perfectly.</p>
+    <div id="splashGrid">
+      <div class="hint"><b>☝ Index finger</b>Point up to draw freely</div>
+      <div class="hint"><b>✌️ Two fingers</b>Straight line mode</div>
+      <div class="hint"><b>🖐️ Palm hold 1s</b>Clear canvas</div>
+      <div class="hint"><b>⚡ Quick palm</b>Undo last stroke</div>
+      <div class="hint"><b>✨ Auto-Snap</b>Draw a <em>circle, rect, triangle</em> or <em>line</em> — snapped perfectly!</div>
+      <div class="hint"><b>💾 Save PNG</b>Top-right button</div>
+    </div>
+    <button id="startBtn">Enable Camera</button>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+
+<script>
+(function () {
+"use strict";
+
+// ── ELEMENTS ──────────────────────────────────────────────────────────────
+const video       = document.getElementById("video");
+const lCanvas     = document.getElementById("lCanvas");
+const dCanvas     = document.getElementById("dCanvas");
+const prvCanvas   = document.getElementById("previewCanvas");
+const lCtx        = lCanvas.getContext("2d");
+const dCtx        = dCanvas.getContext("2d");
+const pCtx        = prvCanvas.getContext("2d");
+
+const colorPicker = document.getElementById("colorPicker");
+const brushSize   = document.getElementById("brushSize");
+const clearBtn    = document.getElementById("clearBtn");
+const saveBtn     = document.getElementById("saveBtn");
+const undoBtn     = document.getElementById("undoBtn");
+const dot         = document.getElementById("dot");
+const statusTxt   = document.getElementById("statusTxt");
+const guessTxt    = document.getElementById("guessTxt");
+const snapTxt     = document.getElementById("snapTxt");
+const palmOverlay = document.getElementById("palmOverlay");
+const palmArc     = document.getElementById("palmArc");
+const palmLbl     = document.getElementById("palmLbl");
+const toast       = document.getElementById("toast");
+const splash      = document.getElementById("splash");
+const startBtn    = document.getElementById("startBtn");
+const snapSwitch  = document.getElementById("snapSwitch");
+const snapLabel   = document.getElementById("snapLabel");
+const snapFlash   = document.getElementById("snapFlash");
+
+// ── SNAP TOGGLE ────────────────────────────────────────────────────────────
+let snapEnabled = true;
+snapSwitch.addEventListener("click", () => {
+  snapEnabled = !snapEnabled;
+  snapSwitch.classList.toggle("on", snapEnabled);
+  snapLabel.textContent = snapEnabled ? "On" : "Off";
+  showToast(snapEnabled ? "✨ Auto-Snap ON" : "✏️ Auto-Snap OFF");
+});
+
+// ── CANVAS SIZE ────────────────────────────────────────────────────────────
+let W = 0, H = 0;
+function resize() {
+  const s = document.getElementById("stage");
+  W = s.clientWidth; H = s.clientHeight;
+  [lCanvas, dCanvas, prvCanvas].forEach(c => { c.width = W; c.height = H; });
+}
+window.addEventListener("resize", resize);
+resize();
+
+// ── HISTORY / UNDO ─────────────────────────────────────────────────────────
+const history = [];
+function pushHistory() {
+  history.push(dCtx.getImageData(0, 0, W, H));
+  if (history.length > 50) history.shift();
+}
+function undo() {
+  if (!history.length) { showToast("Nothing to undo"); return; }
+  dCtx.putImageData(history.pop(), 0, 0);
+  showToast("↩ Undo");
+  setStatus("Undo", "");
+  guessTxt.textContent = "";
+  snapTxt.classList.remove("show");
+}
+
+// ── TOAST ──────────────────────────────────────────────────────────────────
+let toastTimer = null;
+function showToast(msg) {
+  toast.textContent = msg;
+  toast.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toast.classList.remove("show"), 2200);
+}
+
+// ── STATUS ─────────────────────────────────────────────────────────────────
+function setStatus(text, dotCls) {
+  statusTxt.textContent = text;
+  dot.className = dotCls || "";
+}
+
+// ── EMA SMOOTHER ───────────────────────────────────────────────────────────
+const ALPHA = 0.35;
+let sx = null, sy = null;
+function smooth(nx, ny) {
+  if (sx === null) { sx = nx; sy = ny; }
+  else { sx += ALPHA * (nx - sx); sy += ALPHA * (ny - sy); }
+  return [sx, sy];
+}
+function resetSmooth() { sx = null; sy = null; }
+
+// ── COORD CONVERSION ────────────────────────────────────────────────────────
+function toDrawXY(lm) {
+  return [(1 - lm.x) * W, lm.y * H];
+}
+
+// ── DRAW HELPERS ───────────────────────────────────────────────────────────
+function applyGlow(ctx, color, size) {
+  const hex = color.replace("#", "");
+  const r = parseInt(hex.slice(0,2),16);
+  const g = parseInt(hex.slice(2,4),16);
+  const b = parseInt(hex.slice(4,6),16);
+  ctx.strokeStyle = color;
+  ctx.lineWidth   = size;
+  ctx.lineCap     = "round";
+  ctx.lineJoin    = "round";
+  ctx.shadowColor = `rgba(${r},${g},${b},0.55)`;
+  ctx.shadowBlur  = size * 1.9;
+  ctx.globalAlpha = 0.92;
+}
+
+function drawSeg(x1, y1, x2, y2, color, size, ctx) {
+  ctx = ctx || dCtx;
+  ctx.save();
+  applyGlow(ctx, color, size);
+  ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+  ctx.shadowBlur  = 0;
+  ctx.strokeStyle = "rgba(255,255,255,0.26)";
+  ctx.lineWidth   = size * 0.28;
+  ctx.globalAlpha = 0.48;
+  ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+  ctx.restore();
+}
+
+function clearDraw() {
+  dCtx.clearRect(0, 0, W, H);
+  history.length = 0;
+}
+
+// ── SNAP FLASH ─────────────────────────────────────────────────────────────
+function triggerSnapFlash() {
+  snapFlash.classList.remove("show");
+  void snapFlash.offsetWidth;
+  snapFlash.classList.add("show");
+  setTimeout(() => snapFlash.classList.remove("show"), 600);
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+//  SHAPE SNAPPING ENGINE
+// ══════════════════════════════════════════════════════════════════════════
+
+function pathLen(pts) {
+  let l = 0;
+  for (let i = 1; i < pts.length; i++)
+    l += Math.hypot(pts[i][0]-pts[i-1][0], pts[i][1]-pts[i-1][1]);
+  return l;
+}
+
+function countCorners(pts, thresh) {
+  let c = 0;
+  const step = Math.max(1, Math.floor(pts.length / 28));
+  for (let i = step; i < pts.length - step; i += step) {
+    const ax = pts[i-step][0]-pts[i][0], ay = pts[i-step][1]-pts[i][1];
+    const bx = pts[i+step][0]-pts[i][0], by = pts[i+step][1]-pts[i][1];
+    const dp = ax*bx + ay*by;
+    const mag = Math.hypot(ax,ay) * Math.hypot(bx,by);
+    if (mag < 1) continue;
+    const angle = Math.acos(Math.max(-1, Math.min(1, dp/mag))) * 180/Math.PI;
+    if (angle < (180 - thresh)) c++;
+  }
+  return c;
+}
+
+// Detect what was drawn — returns an object {type, label, bbox}
+function detectShape(pts) {
+  if (pts.length < 6) return null;
+  const xs = pts.map(p=>p[0]), ys = pts.map(p=>p[1]);
+  const minX=Math.min(...xs), maxX=Math.max(...xs);
+  const minY=Math.min(...ys), maxY=Math.max(...ys);
+  const bw=maxX-minX, bh=maxY-minY;
+  if (bw < 12 && bh < 12) return null;
+
+  const bbox   = {minX,maxX,minY,maxY,bw,bh,cx:(minX+maxX)/2,cy:(minY+maxY)/2};
+  const total  = pathLen(pts);
+  const diag   = Math.hypot(bw, bh);
+  const aspect = Math.max(bw,bh) / Math.max(Math.min(bw,bh), 1);
+  const closure= Math.hypot(pts[pts.length-1][0]-pts[0][0], pts[pts.length-1][1]-pts[0][1]);
+  const isClosed = (closure / Math.max(total, 1)) < 0.32;
+  const corners  = countCorners(pts, 22);
+  const straight = Math.hypot(pts[pts.length-1][0]-pts[0][0],
+                               pts[pts.length-1][1]-pts[0][1]) / Math.max(total, 1);
+
+  // ── SHAPES ────────────────────────────────────────────────────────────
+  if (!isClosed && straight > 0.82)
+    return {type:"line", label:"Line ➖", bbox};
+
+  if (isClosed && aspect < 1.75 && corners < 4) {
+    const pr = total / Math.max(diag, 1);
+    if (pr > 1.9 && pr < 5.8) return {type:"circle", label:"Circle ⭕", bbox};
+  }
+
+  if (isClosed && corners >= 3 && corners <= 7) {
+    if (aspect < 1.5) return {type:"square", label:"Square ⬜", bbox};
+    return {type:"rect", label:"Rectangle ▭", bbox};
+  }
+
+  if (isClosed && corners >= 2 && corners <= 4)
+    return {type:"triangle", label:"Triangle △", bbox, pts};
+
+  return null;
+}
+
+// ── SNAP DRAWERS ──────────────────────────────────────────────────────────
+// Each draws a perfect version of the detected shape onto dCtx
+
+function snapLine(pts, color, size) {
+  const p0 = pts[0], pN = pts[pts.length-1];
+  drawSeg(p0[0],p0[1], pN[0],pN[1], color, size);
+}
+
+function snapCircle(bbox, color, size) {
+  const {cx,cy,bw,bh} = bbox;
+  const rx = bw/2, ry = bh/2;
+  dCtx.save();
+  applyGlow(dCtx, color, size);
+  dCtx.beginPath();
+  dCtx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI*2);
+  dCtx.stroke();
+  // bright core
+  dCtx.shadowBlur=0; dCtx.strokeStyle="rgba(255,255,255,0.26)";
+  dCtx.lineWidth=size*0.28; dCtx.globalAlpha=0.48;
+  dCtx.beginPath(); dCtx.ellipse(cx,cy,rx,ry,0,0,Math.PI*2); dCtx.stroke();
+  dCtx.restore();
+}
+
+function snapRect(bbox, color, size) {
+  const {minX,minY,bw,bh} = bbox;
+  const pad = 0;
+  dCtx.save();
+  applyGlow(dCtx, color, size);
+  dCtx.beginPath();
+  dCtx.roundRect(minX+pad, minY+pad, bw-pad*2, bh-pad*2, size*0.5);
+  dCtx.stroke();
+  dCtx.shadowBlur=0; dCtx.strokeStyle="rgba(255,255,255,0.26)";
+  dCtx.lineWidth=size*0.28; dCtx.globalAlpha=0.48;
+  dCtx.beginPath(); dCtx.roundRect(minX+pad,minY+pad,bw-pad*2,bh-pad*2,size*0.5); dCtx.stroke();
+  dCtx.restore();
+}
+
+function snapSquare(bbox, color, size) {
+  const side = Math.min(bbox.bw, bbox.bh);
+  const sx = bbox.cx - side/2, sy = bbox.cy - side/2;
+  const fakeBbox = {minX:sx,minY:sy,bw:side,bh:side,cx:bbox.cx,cy:bbox.cy};
+  snapRect(fakeBbox, color, size);
+}
+
+function snapTriangle(bbox, color, size) {
+  const {minX,maxX,minY,maxY,cx} = bbox;
+  // Isoceles: top-center, bottom-left, bottom-right
+  const pts = [[cx, minY],[minX, maxY],[maxX, maxY]];
+  dCtx.save();
+  applyGlow(dCtx, color, size);
+  dCtx.beginPath();
+  dCtx.moveTo(pts[0][0],pts[0][1]);
+  dCtx.lineTo(pts[1][0],pts[1][1]);
+  dCtx.lineTo(pts[2][0],pts[2][1]);
+  dCtx.closePath(); dCtx.stroke();
+  dCtx.shadowBlur=0; dCtx.strokeStyle="rgba(255,255,255,0.26)";
+  dCtx.lineWidth=size*0.28; dCtx.globalAlpha=0.48;
+  dCtx.beginPath();
+  dCtx.moveTo(pts[0][0],pts[0][1]); dCtx.lineTo(pts[1][0],pts[1][1]);
+  dCtx.lineTo(pts[2][0],pts[2][1]); dCtx.closePath(); dCtx.stroke();
+  dCtx.restore();
+}
+
+// ── MAIN SNAP FUNCTION ────────────────────────────────────────────────────
+function snapShape(detected, strokePts, color, size) {
+  const {type, bbox} = detected;
+
+  // Erase the freehand drawing first (restore pre-stroke state)
+  if (history.length) {
+    const prev = history[history.length - 1];
+    dCtx.putImageData(prev, 0, 0);
+  }
+  // Now push a new history entry for the snap
+  pushHistory();
+
+  if      (type === "line")     snapLine(strokePts, color, size);
+  else if (type === "circle")   snapCircle(bbox, color, size);
+  else if (type === "rect")     snapRect(bbox, color, size);
+  else if (type === "square")   snapSquare(bbox, color, size);
+  else if (type === "triangle") snapTriangle(bbox, color, size);
+  else return false; // unknown — keep freehand
+
+  return true;
+}
+
+// ── ANALYZE + SNAP ────────────────────────────────────────────────────────
+function analyzeAndSnap(pts) {
+  if (!pts || pts.length < 3) return;
+  const detected = detectShape(pts);
+  if (!detected) { guessTxt.textContent = ""; snapTxt.classList.remove("show"); return; }
+
+  guessTxt.textContent = "Looks like: " + detected.label;
+
+  if (snapEnabled) {
+    const color = colorPicker.value;
+    const size  = parseInt(brushSize.value);
+    const snapped = snapShape(detected, pts, color, size);
+    if (snapped) {
+      snapTxt.textContent = "✨ Snapped!";
+      snapTxt.classList.add("show");
+      triggerSnapFlash();
+      showToast("✨ Snapped to " + detected.label);
+      setTimeout(() => snapTxt.classList.remove("show"), 2000);
+    }
+  }
+}
+
+// ── LANDMARK SKELETON ───────────────────────────────────────────────────────
+const CONN = [
+  [0,1],[1,2],[2,3],[3,4],
+  [0,5],[5,6],[6,7],[7,8],
+  [0,9],[9,10],[10,11],[11,12],
+  [0,13],[13,14],[14,15],[15,16],
+  [0,17],[17,18],[18,19],[19,20],
+  [5,9],[9,13],[13,17]
+];
+function drawLandmarks(lms) {
+  lCtx.clearRect(0, 0, W, H);
+  lCtx.save();
+  lCtx.strokeStyle = "rgba(124,107,255,0.42)";
+  lCtx.lineWidth = 1.8;
+  lCtx.shadowColor = "rgba(124,107,255,0.28)";
+  lCtx.shadowBlur = 4;
+  for (const [a,b] of CONN) {
+    lCtx.beginPath();
+    lCtx.moveTo(lms[a].x * W, lms[a].y * H);
+    lCtx.lineTo(lms[b].x * W, lms[b].y * H);
+    lCtx.stroke();
+  }
+  lCtx.restore();
+  for (let i = 0; i < lms.length; i++) {
+    const x = lms[i].x * W, y = lms[i].y * H;
+    const isKey = i === 8 || i === 12;
+    lCtx.beginPath();
+    lCtx.arc(x, y, isKey ? 6 : 3.2, 0, Math.PI * 2);
+    lCtx.fillStyle = i === 8 ? "#ff6b9d" : i === 12 ? "#38bdf8" : "rgba(200,200,255,0.6)";
+    lCtx.shadowColor = i === 8 ? "#ff6b9d" : i === 12 ? "#38bdf8" : "transparent";
+    lCtx.shadowBlur  = isKey ? 10 : 0;
+    lCtx.fill();
+  }
+}
+
+// ── GESTURE HELPERS ────────────────────────────────────────────────────────
+function ext(lms, tip, pip) { return lms[tip].y < lms[pip].y - 0.01; }
+function d2(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
+
+function classify(lms) {
+  const iE = ext(lms, 8,  6);
+  const mE = ext(lms, 12, 10);
+  const rE = ext(lms, 16, 14);
+  const pE = ext(lms, 20, 18);
+  const allExt    = iE && mE && rE && pE;
+  const noneExt   = !iE && !mE && !rE && !pE;
+  const onlyIndex = iE && !mE && !rE && !pE;
+  const twoFinger = iE && mE && !rE && !pE;
+  const twoFingerPinch = twoFinger && d2(lms[8], lms[12]) < 0.07;
+  return { iE, mE, allExt, noneExt, onlyIndex, twoFinger, twoFingerPinch };
+}
+
+// ── HYSTERESIS ─────────────────────────────────────────────────────────────
+const HYST = 5;
+const ghist = [];
+function pushG(name) { ghist.push(name); if (ghist.length > 24) ghist.shift(); }
+function stableG(name) {
+  if (ghist.length < HYST) return false;
+  return ghist.slice(-HYST).every(g => g === name);
+}
+
+// ── PALM STATE ─────────────────────────────────────────────────────────────
+const PALM_HOLD_MS = 1000;
+const CIRC = 340;
+let palmStart   = null;
+let palmCleared = false;
+let palmWasOpen = false;
+let palmOpenAt  = 0;
+
+// ── LINE MODE STATE ────────────────────────────────────────────────────────
+let lineActive    = false;
+let lineX0 = null, lineY0 = null;
+let lineCommitted = false;
+
+// ── DRAWING STATE ──────────────────────────────────────────────────────────
+let isDrawing  = false;
+let prevX = null, prevY = null;
+let strokePts  = [];
+let handLost   = false;
+
+// ── MAIN RESULTS HANDLER ───────────────────────────────────────────────────
+function onResults(results) {
+  lCtx.clearRect(0, 0, W, H);
+
+  if (!results.multiHandLandmarks || !results.multiHandLandmarks.length) {
+    if (!handLost) {
+      handLost = true;
+      if (isDrawing) endStroke();
+      isDrawing = false;
+      lineActive = false; lineX0 = lineY0 = null;
+      resetSmooth(); prevX = prevY = null;
+      palmStart = null; palmCleared = false; palmWasOpen = false;
+      palmOverlay.classList.remove("show");
+      setStatus("No hand", "");
+    }
+    return;
+  }
+
+  handLost = false;
+  const lms = results.multiHandLandmarks[0];
+  drawLandmarks(lms);
+
+  const g = classify(lms);
+
+  let gname = "none";
+  if (g.allExt)         gname = "palm";
+  else if (g.twoFinger) gname = "two";
+  else if (g.onlyIndex) gname = "index";
+  pushG(gname);
+
+  // ── PALM ────────────────────────────────────────────────────────────────
+  if (stableG("palm")) {
+    dot.className = "palm";
+    setStatus("🖐️ Open palm", "palm");
+    if (isDrawing) { endStroke(); isDrawing = false; prevX = prevY = null; resetSmooth(); }
+    lineActive = false; lineX0 = lineY0 = null;
+    pCtx.clearRect(0, 0, W, H);
+
+    if (!palmWasOpen) { palmOpenAt = Date.now(); palmWasOpen = true; }
+
+    if (!palmCleared) {
+      if (!palmStart) palmStart = Date.now();
+      const elapsed = Date.now() - palmStart;
+      const frac    = Math.min(elapsed / PALM_HOLD_MS, 1);
+      palmOverlay.classList.add("show");
+      palmArc.style.strokeDashoffset = CIRC * (1 - frac);
+      palmLbl.textContent = frac < 1 ? "Hold to clear…" : "Cleared!";
+      if (frac >= 1 && !palmCleared) {
+        pushHistory();
+        clearDraw();
+        palmCleared = true;
+        guessTxt.textContent = "";
+        snapTxt.classList.remove("show");
+        showToast("🗑️ Canvas cleared");
+        setStatus("Cleared", "palm");
+        setTimeout(() => palmOverlay.classList.remove("show"), 600);
+      }
+    }
+    return;
+  }
+
+  if (palmWasOpen) {
+    const heldMs = Date.now() - palmOpenAt;
+    palmWasOpen = false;
+    if (heldMs < PALM_HOLD_MS && !palmCleared) undo();
+    palmStart   = null;
+    palmCleared = false;
+    palmOverlay.classList.remove("show");
+  }
+
+  // ── TWO FINGERS: straight line mode ──────────────────────────────────
+  if (stableG("two")) {
+    dot.className = "line";
+    setStatus("✌️ Line mode", "line");
+    if (isDrawing) { endStroke(); isDrawing = false; prevX = prevY = null; resetSmooth(); }
+
+    const [cx, cy] = toDrawXY(lms[8]);
+    const [smX, smY] = smooth(cx, cy);
+
+    if (g.twoFingerPinch) {
+      if (!lineActive) {
+        lineActive = true; lineCommitted = false;
+        lineX0 = smX; lineY0 = smY;
+      }
+      pCtx.clearRect(0, 0, W, H);
+      if (lineX0 !== null) {
+        drawSeg(lineX0, lineY0, smX, smY, colorPicker.value, parseInt(brushSize.value), pCtx);
+      }
+    } else {
+      pCtx.clearRect(0, 0, W, H);
+      if (lineActive && lineX0 !== null && !lineCommitted) {
+        pushHistory();
+        drawSeg(lineX0, lineY0, smX, smY, colorPicker.value, parseInt(brushSize.value));
+        guessTxt.textContent = "Line ➖";
+        lineCommitted = true;
+      }
+      lineActive = false; lineX0 = lineY0 = null;
+    }
+    return;
+  } else {
+    pCtx.clearRect(0, 0, W, H);
+    lineActive = false; lineX0 = lineY0 = null;
+  }
+
+  // ── INDEX FINGER: freehand draw ──────────────────────────────────────
+  if (stableG("index")) {
+    dot.className = "on";
+    setStatus("☝ Drawing…", "on");
+    palmStart = null;
+
+    const [cx, cy] = toDrawXY(lms[8]);
+    const [smX, smY] = smooth(cx, cy);
+
+    if (!isDrawing) {
+      isDrawing = true;
+      prevX = smX; prevY = smY;
+      strokePts = [[smX, smY]];
+      pushHistory();
+    } else {
+      const dist = Math.hypot(smX - prevX, smY - prevY);
+      if (dist > 0.5 && dist < W * 0.18) {
+        drawSeg(prevX, prevY, smX, smY, colorPicker.value, parseInt(brushSize.value));
+        strokePts.push([smX, smY]);
+      }
+      prevX = smX; prevY = smY;
+    }
+    return;
+  } else {
+    if (isDrawing) endStroke();
+    isDrawing = false;
+    prevX = prevY = null;
+    resetSmooth();
+  }
+
+  palmStart = null;
+  setStatus("Show your hand", "");
+  dot.className = "";
+}
+
+function endStroke() {
+  if (strokePts.length > 5) analyzeAndSnap(strokePts);
+  strokePts = [];
+}
+
+// ── SAVE PNG ───────────────────────────────────────────────────────────────
+function savePNG() {
+  const off = document.createElement("canvas");
+  off.width = W; off.height = H;
+  const c = off.getContext("2d");
+  c.fillStyle = "#08080f";
+  c.fillRect(0, 0, W, H);
+  c.drawImage(dCanvas, 0, 0);
+  const a = document.createElement("a");
+  a.href = off.toDataURL("image/png");
+  a.download = "fingerpaint_" + Date.now() + ".png";
+  a.click();
+}
+
+// ── MEDIAPIPE ──────────────────────────────────────────────────────────────
+const hands = new Hands({
+  locateFile: f => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}`
+});
+hands.setOptions({
+  maxNumHands: 1,
+  modelComplexity: 1,
+  minDetectionConfidence: 0.72,
+  minTrackingConfidence: 0.65
+});
+hands.onResults(onResults);
+
+// ── CAMERA ─────────────────────────────────────────────────────────────────
+function startCamera() {
+  const cam = new Camera(video, {
+    onFrame: async () => { await hands.send({ image: video }); },
+    width: 1280, height: 720
+  });
+  cam.start().catch(e => setStatus("Camera error: " + e.message, ""));
+}
+
+// ── BUTTON CONTROLS ────────────────────────────────────────────────────────
+clearBtn.addEventListener("click", () => {
+  pushHistory(); clearDraw(); guessTxt.textContent = "";
+  snapTxt.classList.remove("show");
+  showToast("🗑️ Cleared");
+});
+saveBtn.addEventListener("click", () => { savePNG(); showToast("💾 Saved!"); });
+undoBtn.addEventListener("click", undo);
+
+startBtn.addEventListener("click", () => {
+  splash.style.opacity = "0";
+  splash.style.pointerEvents = "none";
+  setTimeout(() => splash.style.display = "none", 500);
+  startCamera();
+});
+
+})();
+</script>
+</body>
+</html>
